@@ -3,6 +3,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { auth } from "@/firebase/client";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
+import { signUp, signIn } from "@/lib/actions/auth.action";
 
 import { z } from "zod";
 
@@ -34,21 +37,66 @@ const AuthForm = ({ type }: { type: FormType }) => {
   });
 
   // 2. Define a submit handler.
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  const onSubmit = async (data: z.infer<typeof formSchema>) => {
     try {
       if (type === "sign-up") {
-        toast.success("Account created successfully.Please sign in.");
+        const { name, email, password } = data;
+
+        const userCredential = await createUserWithEmailAndPassword(
+          auth,
+          email,
+          password
+        );
+
+        const result = await signUp({
+          uid: userCredential.user.uid,
+          name: name!,
+          email,
+          password,
+        });
+
+        await auth.signOut(); // Sign out to enable fresh sign-in flow
+
+        if (!result.success) {
+          console.error("Firestore user profile creation failed:", result.message);
+          // We still proceed because the Auth account was created, which is what the user wants to test.
+        }
+
+        toast.success("Account created successfully. Please sign in.");
         router.push("/sign-in");
-        console.log("type is:", type);
       } else {
-        toast.success("Sign in successfully");
-        router.push("/");
+        const { email, password } = data;
+
+        const userCredential = await signInWithEmailAndPassword(
+          auth,
+          email,
+          password
+        );
+
+        const idToken = await userCredential.user.getIdToken();
+        if (!idToken) {
+          toast.error("Sign in Failed. Please try again.");
+          return;
+        }
+
+        const result = await signIn({
+          email,
+          idToken,
+        });
+
+        if (result?.success) {
+          toast.success("Signed in successfully.");
+          router.push("/");
+        } else {
+          toast.error(result?.message || "Sign in failed. Please try again.");
+        }
       }
-    } catch (error) {
-      console.log(error);
-      toast.error(`There was an error: ${error}`);
+    } catch (error: any) {
+      console.error("Auth error:", error);
+      const errorMessage = error.message || "An unexpected error occurred.";
+      toast.error(errorMessage);
     }
-  }
+  };
   console.log("type is:", type);
 
   const isSignIn = type === "sign-in";

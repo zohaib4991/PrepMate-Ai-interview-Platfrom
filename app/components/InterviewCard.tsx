@@ -17,7 +17,7 @@ const InterviewCard = ({ interviewId,
   return (
     <div className='card-border w-[360px] max-sm:w-full min-h-96'>
         <div className='card-interview'>
-            <div>
+            <div className=''>
                 <div className='absolute top-0 right-0 w-fit px-4 py-2 rounded-bl-lg bg-light-600'>
                     <p className='badge-text'>{type}</p>
                 </div>
@@ -48,7 +48,7 @@ const InterviewCard = ({ interviewId,
             <div className='flex flex-row justify-between'>
                 <DisplayTechIcons techStack={techstack} />
                 <Button className='btn-parimary'>
-                    <Link href='/'>View Interview</Link>
+                    <Link href='/interview?mode=practice&interviewId=123'>View Interview</Link>
                 </Button>
             </div>
 

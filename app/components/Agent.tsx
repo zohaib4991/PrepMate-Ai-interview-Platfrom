@@ -1,22 +1,26 @@
+'use client'
 import { cn } from "@/lib/utils";
 import { Span } from "next/dist/trace";
 import Image from "next/image";
-import React from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 enum CallStatus {
-    INACTIVE = 'INACTIVE',
-    CONNECTING = 'CONNECTING',
-    ACTIVE = 'ACTIVE',
-    FINISHED = 'FINISHED',
+  INACTIVE = "INACTIVE",
+  CONNECTING = "CONNECTING",
+  ACTIVE = "ACTIVE",
+  FINISHED = "FINISHED",
 }
 
-const Agent = ({userName}: AgentProps) => {
+const Agent = ({ userName }: AgentProps) => {
   const isSpeaking = true;
-  const callStatus = CallStatus.FINISHED
-  const messages = [
-    'Whats your name.',
-    'My name is Zohaib, nice to meet you.'
-  ];
+  const callStatus = CallStatus.ACTIVE;
+  const messages = ["Whats your name.", "My name is Zohaib, nice to meet you."];
+
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const mode = searchParams.get("mode"); // "create" | "practice"
+  const interviewId = searchParams.get("interviewId");
 
   const lastMessage = messages[messages.length - 1];
   return (
@@ -50,33 +54,51 @@ const Agent = ({userName}: AgentProps) => {
         </div>
       </div>
 
-      {
-        messages.length > 0 && (
-          <div className="transcript-border">
-            <div className="transcript">
-              <p className={c('transition-opacity duration-500 opacity-0', 'animate-fadeIn opacity-100')}>{lastMessage}</p>
-            </div>
+      {messages.length > 0 && (
+        <div className="transcript-border">
+          <div className="transcript">
+            <p
+              className={cn(
+                "transition-opacity duration-500 opacity-0",
+                "animate-fadeIn opacity-100"
+              )}
+            >
+              {lastMessage}
+            </p>
           </div>
-        )
-      }
+        </div>
+      )}
 
       <div className="w-full flex justify-center">
-        
-        { callStatus !==  'ACTIVE' ? (
-            <button className="relative btn-call">
-                <span className={cn('absolute animate-ping rounded-full opacity-75', callStatus !== 'CONNECTING' & 'hidden')} />
-                   
-               
-                <span>
-                   {callStatus === 'INACTIVE' || callStatus === 'FINISHED' ? 'Call' : '. . .'}
-                </span>
-            </button>
-        ): (
-            <button className="btn-disconnect">
-                End
-            </button>
-        )}
+        {callStatus !== "ACTIVE" ? (
+          <button className="relative btn-call">
+            <span
+              className={cn(
+                "absolute animate-ping rounded-full opacity-75",
+                callStatus !== "CONNECTING" && "hidden"
+              )}
+            />
 
+            <span>
+              {callStatus === "INACTIVE" || callStatus === "FINISHED"
+                ? "Call"
+                : ". . ."}
+            </span>
+          </button>
+        ) : (
+          <button
+            className="btn-disconnect"
+            onClick={() => {
+              if (mode === "practice" && interviewId) {
+                router.push(`interview/feedback`);
+              } else {
+                router.push("/");
+              }
+            }}
+          >
+            End
+          </button>
+        )}
       </div>
     </>
   );
