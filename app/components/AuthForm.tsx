@@ -52,7 +52,7 @@ const AuthForm = ({ type }: { type: FormType }) => {
           uid: userCredential.user.uid,
           name: name!,
           email,
-          password,
+          password, 
         });
 
         await auth.signOut(); // Sign out to enable fresh sign-in flow
@@ -84,14 +84,14 @@ const AuthForm = ({ type }: { type: FormType }) => {
           idToken,
         });
 
-        if (result?.success) {
-          toast.success("Signed in successfully.");
-          router.push("/");
-        } else {
+        if (result?.success === false) {
           toast.error(result?.message || "Sign in failed. Please try again.");
+        } else {
+          toast.success("Signed in successfully.");
         }
       }
     } catch (error: any) {
+      if (error.message === "NEXT_REDIRECT") return;
       console.error("Auth error:", error);
       const errorMessage = error.message || "An unexpected error occurred.";
       toast.error(errorMessage);

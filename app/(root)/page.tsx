@@ -8,8 +8,9 @@ import InterviewCard from "../components/InterviewCard";
 const page = () => {
   return (
     <>
+      {/* header */}
       <section className="card-cta ">
-        <div className="flex flex-col gap-6 max-w-lg">
+        <div className="flex flex-col gap-6 max-w-lg ">
           <h2>Get Interview-Ready with AI-Powered Paratice & Feedback</h2>
           <p>Paractice real interview questions & get instant feedback</p>
           <Button asChild className="btn-primary max-sm:w-full">
@@ -24,7 +25,7 @@ const page = () => {
           className="max-sm:hidden"
         />
       </section>
-
+      {/* Past interviews */}
       <section className="flex flex-col gap-6 mt-8 ">
         <h2>Your Past Interviews</h2>
         <div className="interviews-section">
@@ -34,6 +35,8 @@ const page = () => {
           {/* <p>You haven't taken any interview yet.</p> */}
         </div>
       </section>
+
+      {/*  */}
       <section className="flex flex-col gap-6 mt-8 ">
         <h2>Take an Interview</h2>
         <div className="interviews-section">

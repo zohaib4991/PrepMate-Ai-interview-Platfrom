@@ -1,5 +1,6 @@
 "use server";
 import { db, auth } from "@/firebase/admin";
+import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 
 // Session duration (1 week)
@@ -22,6 +23,8 @@ export async function setSessionCookie(idToken: string) {
         path: "/",
         sameSite: "lax",
     });
+
+    console.log("Session cookie set successfully.");
 }
 
 export async function signUp(params: SignUpParams) {
@@ -78,7 +81,17 @@ export async function signIn(params: SignInParams) {
             };
 
         await setSessionCookie(idToken);
-        return { success: true };
+        console.log(`User ${email} signed in successfully.`);
+
+        // Ensure user exists in Firestore to prevent redirect loop in layout
+        const firestoreUser = await db.collection("users").doc(userRecord.uid).get();
+        if (!firestoreUser.exists) {
+            console.log(`Creating missing Firestore record for user: ${email}`);
+            await db.collection("users").doc(userRecord.uid).set({
+                email,
+                name: email.split("@")[0], // Fallback name
+            });
+        }
     } catch (error: any) {
         console.error("Error in signIn action:", error);
 
@@ -87,34 +100,73 @@ export async function signIn(params: SignInParams) {
             message: error.message || "Failed to log into account. Please try again.",
         };
     }
+
+    redirect("/");
 }
 
 
 // Get current user from session cookie
+// export async function getCurrentUser(): Promise<User | null> {
+//     const cookieStore = await cookies();
+
+//     const sessionCookie = cookieStore.get("session")?.value;
+//     if (!sessionCookie) {
+//         console.log("No session cookie found in getCurrentUser");
+//         return null;
+//     }
+
+//     try {
+//         const decodedClaims = await auth.verifySessionCookie(sessionCookie, true);
+//         console.log("Session cookie decoded successfully for UID:", decodedClaims.uid);
+
+//         // get user info from db
+//         const userRecord = await db
+//             .collection("users")
+//             .doc(decodedClaims.uid)
+//             .get();
+//         if (!userRecord.exists) {
+//             console.log("User record not found in Firestore for UID:", decodedClaims.uid);
+//             return null;
+//         }
+
+//         console.log("User record found in Firestore.");
+//         return {
+//             ...userRecord.data(),
+//             id: userRecord.id,
+//         } as User;
+//     } catch (error) {
+//         console.log("Error verifying session cookie or fetching user:", error);
+
+//         // Invalid or expired session
+//         return null;
+//     }
+// }
+
 export async function getCurrentUser(): Promise<User | null> {
     const cookieStore = await cookies();
-
     const sessionCookie = cookieStore.get("session")?.value;
-    if (!sessionCookie) return null;
+
+    console.log("=== getCurrentUser called ===");
+    console.log("Session cookie exists:", !!sessionCookie);
+    console.log("Session cookie value (first 20 chars):", sessionCookie?.substring(0, 20));
+
+    if (!sessionCookie) {
+        console.log("No session cookie found");
+        return null;
+    }
 
     try {
         const decodedClaims = await auth.verifySessionCookie(sessionCookie, true);
+        console.log("✅ Cookie verified for UID:", decodedClaims.uid);
 
-        // get user info from db
-        const userRecord = await db
-            .collection("users")
-            .doc(decodedClaims.uid)
-            .get();
+        const userRecord = await db.collection("users").doc(decodedClaims.uid).get();
+        console.log("Firestore user exists:", userRecord.exists);
+
         if (!userRecord.exists) return null;
 
-        return {
-            ...userRecord.data(),
-            id: userRecord.id,
-        } as User;
+        return { ...userRecord.data(), id: userRecord.id } as User;
     } catch (error) {
-        console.log(error);
-
-        // Invalid or expired session
+        console.log("❌ verifySessionCookie failed:", error);
         return null;
     }
 }
