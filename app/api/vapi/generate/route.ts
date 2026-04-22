@@ -41,12 +41,17 @@ export async function POST(request: Request) {
     `,
         });
 
+        const cleanedQuestions = questions
+            .replace(/```json\n?/g, "")
+            .replace(/```\n?/g, "")
+            .trim();
+
         const interview = {
             role: role,
             type: type,
             level: level,
             techstack: techstack.split(","),
-            questions: JSON.parse(questions),
+            questions: JSON.parse(cleanedQuestions),
             userId: userid,
             finalized: true,
             coverImage: getRandomInterviewCover(),
