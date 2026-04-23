@@ -7,22 +7,20 @@ import { getRandomInterviewCover } from "@/lib/utils";
 export async function POST(request: Request) {
     const body = await request.json();
 
-    console.log("Full body received:", JSON.stringify(body, null, 2));
+    console.log("Full body:", JSON.stringify(body, null, 2));
 
-    // Handle apiRequest tool call format
     const message = body.message;
-    const toolCall = message?.toolCalls?.[0] ?? message?.toolCallList?.[0];
-    const args = toolCall?.function?.arguments ?? toolCall?.function?.parameters;
+    const toolCall = message?.toolCalls?.[0];
+    const args = toolCall?.function?.arguments;
 
     const role = args?.role;
     const level = args?.level;
     const techstack = args?.techstack;
     const type = args?.type;
     const amount = args?.amount;
-    const userid = message?.call?.assistantOverrides?.variableValues?.userid
-        ?? message?.call?.assistantOverrides?.variableValues?.userId;
+    const userid = message?.call?.assistantOverrides?.variableValues?.userid;
 
-    console.log("Extracted values:", { role, level, techstack, type, amount, userid });
+    console.log("Extracted:", { role, level, techstack, type, amount, userid });
 
     if (!role || !level || !techstack || !amount || !userid || !type) {
         return Response.json(
@@ -62,12 +60,12 @@ export async function POST(request: Request) {
 
         await db.collection("interviews").add(interview);
 
-        // Return format required by Vapi for tool calls
+        // ✅ Required response format for Vapi function tool calls
         return Response.json({
             results: [
                 {
                     toolCallId: toolCall?.id,
-                    result: "Interview generated successfully. The call will now end.",
+                    result: "Interview generated successfully.",
                 },
             ],
         });
@@ -77,7 +75,6 @@ export async function POST(request: Request) {
         return Response.json({ success: false, error: error }, { status: 500 });
     }
 }
-
 export async function GET() {
     return Response.json({ success: true, data: "Thank you!" }, { status: 200 });
 }

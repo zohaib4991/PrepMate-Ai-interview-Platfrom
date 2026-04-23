@@ -27,8 +27,7 @@ This is a voice conversation - do not use any special characters like * or /.`,
         ],
         tools: [
             {
-                type: "apiRequest",
-                name: "generateInterview",
+                type: "function",
                 function: {
                     name: "generateInterview",
                     description: "Call this when you have collected all five pieces of information: role, level, techstack, type, and amount.",
@@ -61,8 +60,9 @@ This is a voice conversation - do not use any special characters like * or /.`,
                         required: ["role", "level", "techstack", "type", "amount"],
                     },
                 },
-                url: YOUR_NEXT_URL,
-                method: "POST",
+                server: {
+                    url: YOUR_NEXT_URL,
+                },
             },
         ],
     },
