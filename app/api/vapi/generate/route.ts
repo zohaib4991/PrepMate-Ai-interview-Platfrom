@@ -5,26 +5,34 @@ import { db } from "@/firebase/admin";
 import { getRandomInterviewCover } from "@/lib/utils";
 
 export async function POST(request: Request) {
+    const body = await request.json();
 
-    // Read from URL query params instead of body
-    const { searchParams } = new URL(request.url);
+    console.log("Full body received:", JSON.stringify(body, null, 2));
 
-    const type = searchParams.get("type");
-    const role = searchParams.get("role");
-    const level = searchParams.get("level");
-    const techstack = searchParams.get("techstack");
-    const amount = searchParams.get("amount");
-    const userid = searchParams.get("userid");
+    // Handle apiRequest tool call format
+    const message = body.message;
+    const toolCall = message?.toolCalls?.[0] ?? message?.toolCallList?.[0];
+    const args = toolCall?.function?.arguments ?? toolCall?.function?.parameters;
 
-    console.log("Received params:", { type, role, level, techstack, amount, userid });
+    const role = args?.role;
+    const level = args?.level;
+    const techstack = args?.techstack;
+    const type = args?.type;
+    const amount = args?.amount;
+    const userid = message?.call?.assistantOverrides?.variableValues?.userid
+        ?? message?.call?.assistantOverrides?.variableValues?.userId;
+
+    console.log("Extracted values:", { role, level, techstack, type, amount, userid });
 
     if (!role || !level || !techstack || !amount || !userid || !type) {
-        return Response.json({ success: false, error: "Missing fields" }, { status: 400 });
+        return Response.json(
+            { success: false, error: "Missing required fields" },
+            { status: 400 }
+        );
     }
 
     try {
         const { text: questions } = await generateText({
-
             model: google("gemini-2.5-flash"),
             prompt: `Prepare questions for a job interview.
         The job role is ${role}.
@@ -36,22 +44,16 @@ export async function POST(request: Request) {
         The questions are going to be read by a voice assistant so do not use "/" or "*" or any other special characters which might break the voice assistant.
         Return the questions formatted like this:
         ["Question 1", "Question 2", "Question 3"]
-
         Thank you! <3
-    `,
+      `,
         });
 
-        const cleanedQuestions = questions
-            .replace(/```json\n?/g, "")
-            .replace(/```\n?/g, "")
-            .trim();
-
         const interview = {
-            role: role,
-            type: type,
-            level: level,
-            techstack: techstack.split(","),
-            questions: JSON.parse(cleanedQuestions),
+            role,
+            type,
+            level,
+            techstack: techstack.split(",").map((t: string) => t.trim()),
+            questions: JSON.parse(questions),
             userId: userid,
             finalized: true,
             coverImage: getRandomInterviewCover(),
@@ -60,7 +62,16 @@ export async function POST(request: Request) {
 
         await db.collection("interviews").add(interview);
 
-        return Response.json({ success: true }, { status: 200 });
+        // Return format required by Vapi for tool calls
+        return Response.json({
+            results: [
+                {
+                    toolCallId: toolCall?.id,
+                    result: "Interview generated successfully. The call will now end.",
+                },
+            ],
+        });
+
     } catch (error) {
         console.error("Error:", error);
         return Response.json({ success: false, error: error }, { status: 500 });

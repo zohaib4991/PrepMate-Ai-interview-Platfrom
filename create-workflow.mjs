@@ -7,30 +7,37 @@ const assistant = {
     model: {
         provider: "openai",
         model: "gpt-4o",
-        systemPrompt: `You are a voice assistant helping create a personalized job interview.
+        messages: [
+            {
+                role: "system",
+                content: `You are a voice assistant helping create a personalized job interview.
 Your task is to collect the following information from the user one question at a time:
 1. Their target job role (e.g. Frontend Developer, Data Scientist)
-2. Their experience level (junior, mid, or senior)
+2. Their experience level: must be exactly one of: junior, mid, or senior
 3. The tech stack or technologies (e.g. React, Node.js) - ask them to list them separated by commas
-4. The type of interview: technical, behavioural, or mixed
-5. How many questions they want (between 5 and 20)
+4. The type of interview: must be exactly one of: technical, behavioural, or mixed
+5. How many questions they want (a number between 5 and 20)
 
 Ask each question naturally and conversationally.
 Wait for a clear answer before moving to the next question.
-Once you have ALL five answers, call the generateInterview function immediately.
+Once you have ALL five answers, immediately call the generateInterview function.
+Do not say goodbye or end the call yourself — the system will handle that.
 This is a voice conversation - do not use any special characters like * or /.`,
+            },
+        ],
         tools: [
             {
-                type: "function",
+                type: "apiRequest",
+                name: "generateInterview",
                 function: {
                     name: "generateInterview",
-                    description: "Call this function when you have collected all required information from the user: role, level, techstack, type, and amount.",
+                    description: "Call this when you have collected all five pieces of information: role, level, techstack, type, and amount.",
                     parameters: {
                         type: "object",
                         properties: {
                             role: {
                                 type: "string",
-                                description: "The job role the user wants to train for",
+                                description: "The job role the user wants to train for e.g. Frontend Developer",
                             },
                             level: {
                                 type: "string",
@@ -39,7 +46,7 @@ This is a voice conversation - do not use any special characters like * or /.`,
                             },
                             techstack: {
                                 type: "string",
-                                description: "Comma separated list of technologies",
+                                description: "Comma separated list of technologies e.g. React, Node.js",
                             },
                             type: {
                                 type: "string",
@@ -54,9 +61,8 @@ This is a voice conversation - do not use any special characters like * or /.`,
                         required: ["role", "level", "techstack", "type", "amount"],
                     },
                 },
-                server: {
-                    url: YOUR_NEXT_URL,
-                },
+                url: YOUR_NEXT_URL,
+                method: "POST",
             },
         ],
     },
@@ -65,6 +71,7 @@ This is a voice conversation - do not use any special characters like * or /.`,
         voiceId: "sarah",
     },
     endCallMessage: "Your interview has been created and will appear on your dashboard shortly. Good luck!",
+    endCallPhrases: ["goodbye", "thank you goodbye", "your interview is ready"],
 };
 
 const response = await fetch("https://api.vapi.ai/assistant", {
