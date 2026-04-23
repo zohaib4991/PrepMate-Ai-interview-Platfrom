@@ -1,124 +1,88 @@
 const VAPI_API_KEY = "d8ef3a33-a7ac-4392-8479-fcdf54fa67be";
 const YOUR_NEXT_URL = "https://prep-mate-ai-interview-platfrom.vercel.app/api/vapi/generate";
 
-const workflow = {
+const assistant = {
     name: "Interview Generator",
-    nodes: [
-        {
-            type: "conversation",
-            name: "Gather Info",
-            isStart: true,
-            prompt: `You are a voice assistant helping create a personalized job interview.
+    firstMessage: "Hello {{username}}! I am your AI interview assistant. I will ask you a few questions to create your personalized interview. Let us get started — what job role are you preparing for?",
+    model: {
+        provider: "openai",
+        model: "gpt-4o",
+        systemPrompt: `You are a voice assistant helping create a personalized job interview.
 Your task is to collect the following information from the user one question at a time:
 1. Their target job role (e.g. Frontend Developer, Data Scientist)
 2. Their experience level (junior, mid, or senior)
-3. The tech stack or technologies relevant to the role (e.g. React, Node.js)
-4. The type of interview they want: technical, behavioural, or mixed
+3. The tech stack or technologies (e.g. React, Node.js) - ask them to list them separated by commas
+4. The type of interview: technical, behavioural, or mixed
 5. How many questions they want (between 5 and 20)
-Ask each question naturally and conversationally.
-Wait for a clear answer before moving to the next.
-This is a voice conversation - do not use any special characters like * or /.`,
-            model: {
-                provider: "openai",
-                model: "gpt-4o",
-            },
-            variableExtractionPlan: {
-                schema: {
-                    type: "object",
-                    properties: {
-                        role: {
-                            type: "string",
-                            description: "The job role the user wants to train for.",
-                        },
-                        level: {
-                            type: "string",
-                            description: "The job experience level.",
-                            enum: ["junior", "mid", "senior"],
-                        },
-                        techstack: {
-                            type: "string",
-                            description: "A list of technologies to cover.",
-                        },
-                        type: {
-                            type: "string",
-                            description: "The type of interview.",
-                            enum: ["technical", "behavioural", "mixed"],
-                        },
-                        amount: {
-                            type: "number",
-                            description: "How many questions to generate. Between 5 and 20.",
-                        },
-                    },
-                },
-            },
-        },
 
-        {
-            type: "tool",
-            name: "Send to API",
-            tool: {
-                type: "apiRequest",
+Ask each question naturally and conversationally.
+Wait for a clear answer before moving to the next question.
+Once you have ALL five answers, call the generateInterview function immediately.
+This is a voice conversation - do not use any special characters like * or /.`,
+        tools: [
+            {
+                type: "function",
                 function: {
                     name: "generateInterview",
-                    description: "Send collected interview data to generate questions",
-                    parameters: { type: "object", properties: {}, required: [] },
-                },
-                url: `${YOUR_NEXT_URL}?role={{role}}&level={{level}}&techstack={{techstack}}&type={{type}}&amount={{amount}}&userid={{userid}}`,
-                method: "POST",
-                body: {
-                    type: "object",
-                    properties: {
-                        _placeholder: {
-                            type: "string",
-                            value: "1",
-                            description: "placeholder",
+                    description: "Call this function when you have collected all required information from the user: role, level, techstack, type, and amount.",
+                    parameters: {
+                        type: "object",
+                        properties: {
+                            role: {
+                                type: "string",
+                                description: "The job role the user wants to train for",
+                            },
+                            level: {
+                                type: "string",
+                                description: "Experience level: junior, mid, or senior",
+                                enum: ["junior", "mid", "senior"],
+                            },
+                            techstack: {
+                                type: "string",
+                                description: "Comma separated list of technologies",
+                            },
+                            type: {
+                                type: "string",
+                                description: "Type of interview: technical, behavioural, or mixed",
+                                enum: ["technical", "behavioural", "mixed"],
+                            },
+                            amount: {
+                                type: "number",
+                                description: "Number of questions between 5 and 20",
+                            },
                         },
+                        required: ["role", "level", "techstack", "type", "amount"],
                     },
                 },
-                messages: [
-                    { type: "request-start", content: "Perfect! Generating your interview now..." },
-                    { type: "request-complete", content: "Your interview is ready on your dashboard. Good luck!" },
-                    { type: "request-failed", content: "Something went wrong. Please try again." },
-                ],
+                server: {
+                    url: YOUR_NEXT_URL,
+                },
             },
-        },
-        {
-            type: "hangup",
-            name: "End Call",
-        },
-    ],
-    edges: [
-        {
-            from: "Gather Info",
-            to: "Send to API",
-            condition: {
-                type: "ai",
-                prompt: "User has provided all required information: role, level, techstack, type, and amount of questions.",
-            },
-        },
-        {
-            from: "Send to API",
-            to: "End Call",
-        },
-    ],
+        ],
+    },
+    voice: {
+        provider: "11labs",
+        voiceId: "sarah",
+    },
+    endCallMessage: "Your interview has been created and will appear on your dashboard shortly. Good luck!",
 };
 
-const response = await fetch("https://api.vapi.ai/workflow", {
+const response = await fetch("https://api.vapi.ai/assistant", {
     method: "POST",
     headers: {
         Authorization: `Bearer ${VAPI_API_KEY}`,
         "Content-Type": "application/json",
     },
-    body: JSON.stringify(workflow),
+    body: JSON.stringify(assistant),
 });
 
 const data = await response.json();
 
 if (data.id) {
-    console.log("✅ Workflow created successfully!");
-    console.log("📋 Workflow ID:", data.id);
+    console.log("✅ Assistant created successfully!");
+    console.log("📋 Assistant ID:", data.id);
     console.log("\nAdd this to your .env.local:");
-    console.log(`NEXT_PUBLIC_VAPI_WORKFLOW_ID=${data.id}`);
+    console.log(`NEXT_PUBLIC_VAPI_ASSISTANT_ID=${data.id}`);
 } else {
     console.error("❌ Failed:", JSON.stringify(data, null, 2));
 }
