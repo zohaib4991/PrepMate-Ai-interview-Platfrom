@@ -88,7 +88,7 @@ const Agent = ({
     }
 
     const handleGenerateFeedback = async (messages: SavedMessage[]) => {
-      console.log("handleGenerateFeedback");
+      console.log("handleGenerateFeedback called with messages:", messages.length);
 
       const { success, feedbackId: id } = await createFeedback({
         interviewId: interviewId!,
@@ -141,8 +141,8 @@ const Agent = ({
   };
 
   const handleDisconnect = () => {
-    setCallStatus(CallStatus.FINISHED);
     vapi.stop();
+    setCallStatus(CallStatus.FINISHED);
   };
 
   return (

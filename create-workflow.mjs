@@ -1,4 +1,4 @@
-const VAPI_API_KEY = "d8ef3a33-a7ac-4392-8479-fcdf54fa67be";
+const VAPI_API_KEY = "a613605d-e7b9-4ea7-9e8e-b248e0029a6a";
 const YOUR_NEXT_URL = "https://prep-mate-ai-interview-platfrom.vercel.app/api/vapi/generate";
 
 const assistant = {
