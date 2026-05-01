@@ -88,7 +88,11 @@ const Agent = ({
     }
 
     const handleGenerateFeedback = async (messages: SavedMessage[]) => {
-      console.log("handleGenerateFeedback called with messages:", messages.length);
+      console.log("handleGenerateFeedback called");
+      console.log("messages count:", messages.length);
+      console.log("interviewId:", interviewId);
+      console.log("userId:", userId);
+      console.log("feedbackId:", feedbackId);
 
       const { success, feedbackId: id } = await createFeedback({
         interviewId: interviewId!,
@@ -96,6 +100,8 @@ const Agent = ({
         transcript: messages,
         feedbackId,
       });
+
+      console.log("createFeedback result:", { success, id });
 
       if (success && id) {
         router.push(`/interview/${interviewId}/feedback`);
@@ -106,10 +112,16 @@ const Agent = ({
     };
 
     if (callStatus === CallStatus.FINISHED) {
+      console.log("Call FINISHED");
+      console.log("type:", type);
+      console.log("messages.length:", messages.length);
       if (type === "generate") {
         router.push("/");
       } else {
-        if (messages.length === 0) return;
+        if (messages.length === 0) {
+          console.log("No messages yet, waiting...");
+          return;
+        }
         handleGenerateFeedback(messages);
       }
     }

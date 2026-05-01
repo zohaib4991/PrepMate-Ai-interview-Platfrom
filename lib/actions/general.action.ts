@@ -9,6 +9,14 @@ import { feedbackSchema } from "@/constants";
 export async function createFeedback(params: CreateFeedbackParams) {
     const { interviewId, userId, transcript, feedbackId } = params;
 
+    console.log("createFeedback received:", {
+        interviewId,
+        userId,
+        transcriptLength: transcript.length,
+        feedbackId,
+        firstMessage: transcript[0],
+    });
+
     try {
         const formattedTranscript = transcript
             .map(
