@@ -1,6 +1,6 @@
 "use server";
 
-import { generateObject } from "ai";
+import { generateText } from "ai";
 import { google } from "@ai-sdk/google";
 
 import { db } from "@/firebase/admin";
@@ -25,9 +25,8 @@ export async function createFeedback(params: CreateFeedbackParams) {
             )
             .join("");
 
-        const { object } = await generateObject({
+        const { text } = await generateText({
             model: google("gemini-2.5-flash"),
-            schema: feedbackSchema,
             prompt: `
         You are an AI interviewer analyzing a mock interview. Your task is to evaluate the candidate based on structured categories. Be thorough and detailed in your analysis. Don't be lenient with the candidate. If there are mistakes or areas for improvement, point them out.
         Transcript:
@@ -43,6 +42,10 @@ export async function createFeedback(params: CreateFeedbackParams) {
             system:
                 "You are a professional interviewer analyzing a mock interview. Your task is to evaluate the candidate based on structured categories",
         });
+
+        // Clean and parse the JSON response
+        const cleaned = text.replace(/```json|```/g, "").trim();
+        const object = feedbackSchema.parse(JSON.parse(cleaned));
 
         const feedback = {
             interviewId: interviewId,
