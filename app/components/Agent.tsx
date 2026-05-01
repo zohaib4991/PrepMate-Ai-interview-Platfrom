@@ -109,6 +109,7 @@ const Agent = ({
       if (type === "generate") {
         router.push("/");
       } else {
+        if (messages.length === 0) return;
         handleGenerateFeedback(messages);
       }
     }
